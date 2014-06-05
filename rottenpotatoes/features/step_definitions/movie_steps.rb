@@ -37,7 +37,7 @@ When /I (un)?check the following ratings: (.*)/ do |uncheck, rating_list|
     rating_list.split(', ').each {|rating|
       steps %Q{
         Given I am on the RottenPotatoes home page
-        When I check "ratings[#{rating}]"
+        When I uncheck "ratings[#{rating}]"
         And   I press "Refresh"
       }
     }
@@ -55,8 +55,34 @@ end
 
 Then /I should see all the movies/ do
   # Make sure that all the movies in the app are visible in the table
+  page.should have_css('table#movies tr', :count => Movie.count + 1)
 end
 Then /I should (not )?see the following ratings: (.*)/ do |shouldnot, rating_list|
   # Make sure that all the movies in the app are visible in the table
+  if shouldnot
+    rating_list.split(', ').each {|rating|
+      steps %Q{
+        Given I am on the RottenPotatoes home page
+        Then I should not see the movies rated "#{rating}"
+      }
+    }
+  else
+    rating_list.split(', ').each{|rating|
+      steps %Q{
+        Given I am on the RottenPotatoes home page
+        Then I should see the movies rated "#{rating}"
+      }
+    }
+  end
 #  flunk "Unimplemented"
+end
+
+Then /I should (not )?see the movies rated (.*)/ do |shouldnot, rating|
+  if shouldnot
+      page.find('#movies').has_no_text?("#{rating}")
+  else
+    @rating_count = Movie.find_all_by_rating("#{rating}").count
+    @table_rating = page.all('table#movies', text: "#{rating}").count
+    @rating_count == @table_rating
+  end
 end
